@@ -1,37 +1,15 @@
-package com.spendwise.SpendWise.entity;
-
-import jakarta.persistence.*;
+package com.spendwise.SpendWise.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Entity
-@Table(name = "expenses")
-public class Expense {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class CreateExpenseRequest {
 
     private String description;
-
     private BigDecimal amount;
-
     private LocalDate date;
-
     private String category;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
+    private Long userId;
 
     public String getDescription() {
         return description;
@@ -65,11 +43,11 @@ public class Expense {
         this.category = category;
     }
 
-    public User getUser() {
-        return user;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 }
