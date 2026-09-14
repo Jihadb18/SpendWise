@@ -1,14 +1,16 @@
-package com.spendwise.SpendWise.dto;
+package com.spendwise.SpendWise.dto.income;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public class CreateExpenseRequest {
+public class CreateIncomeRequest {
 
-    @NotBlank(message = "Description is required")
-    private String description;
+    @NotBlank(message = "Source is required")
+    private String source;
 
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
@@ -17,18 +19,15 @@ public class CreateExpenseRequest {
     @NotNull(message = "Date is required")
     private LocalDate date;
 
-    @NotBlank(message = "Category is required")
-    private String category;
-
     @NotNull(message = "User ID is required")
     private Long userId;
 
-    public String getDescription() {
-        return description;
+    public String getSource() {
+        return source;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setSource(String source) {
+        this.source = source;
     }
 
     public BigDecimal getAmount() {
@@ -45,14 +44,6 @@ public class CreateExpenseRequest {
 
     public void setDate(LocalDate date) {
         this.date = date;
-    }
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
     }
 
     public Long getUserId() {

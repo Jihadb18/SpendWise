@@ -10,6 +10,9 @@ import java.util.List;
 
 
 
+import java.time.LocalDate;
+
+
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     List<Expense> findByUserId(Long userId);
@@ -36,4 +39,42 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
        ORDER BY FUNCTION('DATE_FORMAT', e.date, '%Y-%m')
        """)
     List<Object[]> getExpensesByMonth(@Param("userId") Long userId);
+    @Query("SELECT COALESCE(MAX(e.amount), 0) FROM Expense e WHERE e.user.id = :userId")
+    BigDecimal getHighestExpenseByUserId(@Param("userId") Long userId);
+    @Query("""
+       SELECT COALESCE(SUM(e.amount), 0)
+       FROM Expense e
+       WHERE e.user.id = :userId
+       AND e.category = :category
+       AND e.date BETWEEN :startDate AND :endDate
+       """)
+    BigDecimal getExpensesByCategoryAndDate(
+            @Param("userId") Long userId,
+            @Param("category") String category,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+    @Query("""
+       SELECT COALESCE(SUM(e.amount), 0)
+       FROM Expense e
+       WHERE e.user.id = :userId
+       AND e.date BETWEEN :startDate AND :endDate
+       """)
+    BigDecimal getExpensesBetweenDates(
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+    @Query("""
+       SELECT e.category, COALESCE(SUM(e.amount), 0)
+       FROM Expense e
+       WHERE e.user.id = :userId
+       AND e.date BETWEEN :startDate AND :endDate
+       GROUP BY e.category
+       """)
+    List<Object[]> getExpensesByCategoryAndDateRange(
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
 }

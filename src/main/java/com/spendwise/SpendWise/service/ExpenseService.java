@@ -66,7 +66,18 @@ public class ExpenseService {
 
             byCategory.put(category, amount);
         }
+        BigDecimal average = BigDecimal.ZERO;
 
+        if (count > 0) {
+            average = total.divide(
+                    BigDecimal.valueOf(count),
+                    2,
+                    java.math.RoundingMode.HALF_UP
+            );
+        }
+
+        BigDecimal highestExpense =
+                expenseRepository.getHighestExpenseByUserId(userId);
         List<Object[]> monthResults =
                 expenseRepository.getExpensesByMonth(userId);
 
@@ -83,6 +94,8 @@ public class ExpenseService {
                 userId,
                 total,
                 count,
+                average,
+                highestExpense,
                 byCategory,
                 byMonth
         );

@@ -8,6 +8,8 @@ import com.spendwise.SpendWise.service.ExpenseService;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import com.spendwise.SpendWise.dto.ExpenseDashboardResponse;
+
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -24,7 +26,8 @@ public class ExpenseController {
     }
 
     @PostMapping
-    public Expense createExpense(@RequestBody CreateExpenseRequest request) {
+    public Expense createExpense(
+            @Valid @RequestBody CreateExpenseRequest request) {
 
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));

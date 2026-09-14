@@ -8,6 +8,8 @@ public class ExpenseDashboardResponse {
     private Long userId;
     private BigDecimal total;
     private Long count;
+    private BigDecimal average;
+    private BigDecimal highestExpense;
     private Map<String, BigDecimal> byCategory;
     private Map<String, BigDecimal> byMonth;
 
@@ -18,24 +20,16 @@ public class ExpenseDashboardResponse {
             Long userId,
             BigDecimal total,
             Long count,
-            Map<String, BigDecimal> byCategory) {
-
-        this.userId = userId;
-        this.total = total;
-        this.count = count;
-        this.byCategory = byCategory;
-    }
-
-    public ExpenseDashboardResponse(
-            Long userId,
-            BigDecimal total,
-            Long count,
+            BigDecimal average,
+            BigDecimal highestExpense,
             Map<String, BigDecimal> byCategory,
             Map<String, BigDecimal> byMonth) {
 
         this.userId = userId;
         this.total = total;
         this.count = count;
+        this.average = average;
+        this.highestExpense = highestExpense;
         this.byCategory = byCategory;
         this.byMonth = byMonth;
     }
@@ -62,6 +56,22 @@ public class ExpenseDashboardResponse {
 
     public void setCount(Long count) {
         this.count = count;
+    }
+
+    public BigDecimal getAverage() {
+        return average;
+    }
+
+    public void setAverage(BigDecimal average) {
+        this.average = average;
+    }
+
+    public BigDecimal getHighestExpense() {
+        return highestExpense;
+    }
+
+    public void setHighestExpense(BigDecimal highestExpense) {
+        this.highestExpense = highestExpense;
     }
 
     public Map<String, BigDecimal> getByCategory() {
