@@ -70,25 +70,15 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // API endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/users/**").permitAll()
-                        .requestMatchers("/api/expenses/**").permitAll()
-                        .requestMatchers("/api/incomes/**").permitAll()
-                        .requestMatchers("/api/budgets/**").permitAll()
-                        .requestMatchers("/api/subscriptions/**").permitAll()
-                        .requestMatchers("/api/dashboard/**").permitAll()
 
-                        // Swagger / OpenAPI
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html"
                         ).permitAll()
 
-                        // Everything else requires authentication
-                        .anyRequest()
-                        .authenticated()
+                        .anyRequest().authenticated()
                 )
 
                 .addFilterBefore(

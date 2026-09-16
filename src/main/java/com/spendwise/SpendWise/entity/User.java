@@ -1,6 +1,6 @@
 package com.spendwise.SpendWise.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 @Entity
@@ -42,7 +42,7 @@ public class User {
     public void setEmail(String email) {
         this.email = email;
     }
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     public String getPassword() {
         return password;
     }

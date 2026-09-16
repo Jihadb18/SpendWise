@@ -8,6 +8,7 @@ import com.spendwise.SpendWise.service.ExpenseService;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import com.spendwise.SpendWise.dto.ExpenseDashboardResponse;
+import org.springframework.security.core.Authentication;
 
 import jakarta.validation.Valid;
 import java.util.List;
@@ -27,9 +28,12 @@ public class ExpenseController {
 
     @PostMapping
     public Expense createExpense(
-            @Valid @RequestBody CreateExpenseRequest request) {
+            @Valid @RequestBody CreateExpenseRequest request,
+            Authentication authentication) {
 
-        User user = userRepository.findById(request.getUserId())
+        String email = authentication.getName();
+
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Expense expense = new Expense();
@@ -44,30 +48,91 @@ public class ExpenseController {
     }
 
     @GetMapping
-    public List<Expense> getAllExpenses() {
-        return expenseService.getAllExpenses();
+    public List<Expense> getAllExpenses(Authentication authentication) {
+
+        String email = authentication.getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return expenseService.getExpensesByUserId(user.getId());
     }
     @GetMapping("/user/{userId}")
-    public List<Expense> getExpensesByUserId(@PathVariable Long userId) {
+    public List<Expense> getExpensesByUserId(
+            @PathVariable Long userId,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!currentUser.getId().equals(userId)) {
+            throw new RuntimeException("Access denied");
+        }
+
         return expenseService.getExpensesByUserId(userId);
     }
     @GetMapping("/user/{userId}/total")
-    public BigDecimal getTotalExpensesByUserId(@PathVariable Long userId) {
+    public BigDecimal getTotalExpensesByUserId(
+            @PathVariable Long userId,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!currentUser.getId().equals(userId)) {
+            throw new RuntimeException("Access denied");
+        }
+
         return expenseService.getTotalExpensesByUserId(userId);
     }
     @GetMapping("/user/{userId}/dashboard")
     public ExpenseDashboardResponse getDashboard(
-            @PathVariable Long userId) {
+            @PathVariable Long userId,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!currentUser.getId().equals(userId)) {
+            throw new RuntimeException("Access denied");
+        }
 
         return expenseService.getDashboard(userId);
     }
 
-    
-    @GetMapping("/{id}")
-    public Expense getExpenseById(@PathVariable Long id) {
-        return expenseService.getExpenseById(id);
-    }
 
+    @GetMapping("/{id}")
+    public Expense getExpenseById(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Expense expense = expenseService.getExpenseById(id);
+
+        if (expense == null) {
+            throw new RuntimeException("Expense not found");
+        }
+
+        if (expense.getUser() == null) {
+            throw new RuntimeException("Expense has no owner");
+        }
+
+        if (!expense.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Access denied");
+        }
+
+        return expense;
+    }
     @PutMapping("/{id}")
     public Expense updateExpense(
             @PathVariable Long id,

@@ -20,9 +20,6 @@ public class CreateExpenseRequest {
     @NotBlank(message = "Category is required")
     private String category;
 
-    @NotNull(message = "User ID is required")
-    private Long userId;
-
     public String getDescription() {
         return description;
     }
@@ -53,13 +50,5 @@ public class CreateExpenseRequest {
 
     public void setCategory(String category) {
         this.category = category;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
     }
 }

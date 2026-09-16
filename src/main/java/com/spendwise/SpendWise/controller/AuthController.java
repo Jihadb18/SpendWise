@@ -8,6 +8,7 @@ import com.spendwise.SpendWise.security.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -61,5 +62,10 @@ public class AuthController {
         String token = jwtService.generateToken(user.getEmail());
 
         return new AuthResponse(token);
+    }
+    @GetMapping("/me")
+    public String getCurrentUser(Authentication authentication) {
+
+        return authentication.getName();
     }
 }
