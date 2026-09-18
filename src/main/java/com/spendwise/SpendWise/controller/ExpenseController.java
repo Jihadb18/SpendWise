@@ -136,12 +136,55 @@ public class ExpenseController {
     @PutMapping("/{id}")
     public Expense updateExpense(
             @PathVariable Long id,
-            @RequestBody Expense expense) {
+            @RequestBody Expense expense,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Expense existingExpense = expenseService.getExpenseById(id);
+
+        if (existingExpense == null) {
+            throw new RuntimeException("Expense not found");
+        }
+
+        if (existingExpense.getUser() == null) {
+            throw new RuntimeException("Expense has no owner");
+        }
+
+        if (!existingExpense.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Access denied");
+        }
+
         return expenseService.updateExpense(id, expense);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteExpense(@PathVariable Long id) {
+    public void deleteExpense(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        User currentUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Expense existingExpense = expenseService.getExpenseById(id);
+
+        if (existingExpense == null) {
+            throw new RuntimeException("Expense not found");
+        }
+
+        if (existingExpense.getUser() == null) {
+            throw new RuntimeException("Expense has no owner");
+        }
+
+        if (!existingExpense.getUser().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Access denied");
+        }
+
         expenseService.deleteExpense(id);
     }
 }
