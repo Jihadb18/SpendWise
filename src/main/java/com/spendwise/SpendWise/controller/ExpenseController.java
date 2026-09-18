@@ -1,16 +1,20 @@
 package com.spendwise.SpendWise.controller;
 
 import com.spendwise.SpendWise.dto.CreateExpenseRequest;
+import com.spendwise.SpendWise.dto.ExpenseDashboardResponse;
 import com.spendwise.SpendWise.entity.Expense;
 import com.spendwise.SpendWise.entity.User;
+import com.spendwise.SpendWise.exception.AccessDeniedException;
+import com.spendwise.SpendWise.exception.ResourceNotFoundException;
 import com.spendwise.SpendWise.repository.UserRepository;
 import com.spendwise.SpendWise.service.ExpenseService;
-import org.springframework.web.bind.annotation.*;
-import java.math.BigDecimal;
-import com.spendwise.SpendWise.dto.ExpenseDashboardResponse;
-import org.springframework.security.core.Authentication;
 
 import jakarta.validation.Valid;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -20,8 +24,10 @@ public class ExpenseController {
     private final ExpenseService expenseService;
     private final UserRepository userRepository;
 
-    public ExpenseController(ExpenseService expenseService,
-                             UserRepository userRepository) {
+    public ExpenseController(
+            ExpenseService expenseService,
+            UserRepository userRepository) {
+
         this.expenseService = expenseService;
         this.userRepository = userRepository;
     }
@@ -34,7 +40,8 @@ public class ExpenseController {
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
         Expense expense = new Expense();
 
@@ -48,15 +55,18 @@ public class ExpenseController {
     }
 
     @GetMapping
-    public List<Expense> getAllExpenses(Authentication authentication) {
+    public List<Expense> getAllExpenses(
+            Authentication authentication) {
 
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
         return expenseService.getExpensesByUserId(user.getId());
     }
+
     @GetMapping("/user/{userId}")
     public List<Expense> getExpensesByUserId(
             @PathVariable Long userId,
@@ -65,14 +75,16 @@ public class ExpenseController {
         String email = authentication.getName();
 
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
         if (!currentUser.getId().equals(userId)) {
-            throw new RuntimeException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
 
         return expenseService.getExpensesByUserId(userId);
     }
+
     @GetMapping("/user/{userId}/total")
     public BigDecimal getTotalExpensesByUserId(
             @PathVariable Long userId,
@@ -81,14 +93,16 @@ public class ExpenseController {
         String email = authentication.getName();
 
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
         if (!currentUser.getId().equals(userId)) {
-            throw new RuntimeException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
 
         return expenseService.getTotalExpensesByUserId(userId);
     }
+
     @GetMapping("/user/{userId}/dashboard")
     public ExpenseDashboardResponse getDashboard(
             @PathVariable Long userId,
@@ -97,15 +111,15 @@ public class ExpenseController {
         String email = authentication.getName();
 
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
         if (!currentUser.getId().equals(userId)) {
-            throw new RuntimeException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
 
         return expenseService.getDashboard(userId);
     }
-
 
     @GetMapping("/{id}")
     public Expense getExpenseById(
@@ -115,24 +129,27 @@ public class ExpenseController {
         String email = authentication.getName();
 
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
         Expense expense = expenseService.getExpenseById(id);
 
         if (expense == null) {
-            throw new RuntimeException("Expense not found");
+            throw new ResourceNotFoundException("Expense not found");
         }
 
         if (expense.getUser() == null) {
-            throw new RuntimeException("Expense has no owner");
+            throw new ResourceNotFoundException(
+                    "Expense has no owner");
         }
 
         if (!expense.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
 
         return expense;
     }
+
     @PutMapping("/{id}")
     public Expense updateExpense(
             @PathVariable Long id,
@@ -142,20 +159,23 @@ public class ExpenseController {
         String email = authentication.getName();
 
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
-        Expense existingExpense = expenseService.getExpenseById(id);
+        Expense existingExpense =
+                expenseService.getExpenseById(id);
 
         if (existingExpense == null) {
-            throw new RuntimeException("Expense not found");
+            throw new ResourceNotFoundException("Expense not found");
         }
 
         if (existingExpense.getUser() == null) {
-            throw new RuntimeException("Expense has no owner");
+            throw new ResourceNotFoundException(
+                    "Expense has no owner");
         }
 
         if (!existingExpense.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
 
         return expenseService.updateExpense(id, expense);
@@ -169,20 +189,23 @@ public class ExpenseController {
         String email = authentication.getName();
 
         User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
-        Expense existingExpense = expenseService.getExpenseById(id);
+        Expense existingExpense =
+                expenseService.getExpenseById(id);
 
         if (existingExpense == null) {
-            throw new RuntimeException("Expense not found");
+            throw new ResourceNotFoundException("Expense not found");
         }
 
         if (existingExpense.getUser() == null) {
-            throw new RuntimeException("Expense has no owner");
+            throw new ResourceNotFoundException(
+                    "Expense has no owner");
         }
 
         if (!existingExpense.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Access denied");
+            throw new AccessDeniedException("Access denied");
         }
 
         expenseService.deleteExpense(id);

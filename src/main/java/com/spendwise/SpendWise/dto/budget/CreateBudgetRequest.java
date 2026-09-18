@@ -19,9 +19,6 @@ public class CreateBudgetRequest {
     @NotNull(message = "Month is required")
     private LocalDate month;
 
-    @NotNull(message = "User ID is required")
-    private Long userId;
-
     public String getCategory() {
         return category;
     }
@@ -44,13 +41,5 @@ public class CreateBudgetRequest {
 
     public void setMonth(LocalDate month) {
         this.month = month;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
     }
 }

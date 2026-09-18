@@ -23,9 +23,6 @@ public class CreateSubscriptionRequest {
     @NotNull(message = "Frequency is required")
     private SubscriptionFrequency frequency;
 
-    @NotNull(message = "User ID is required")
-    private Long userId;
-
     public String getName() {
         return name;
     }
@@ -56,13 +53,5 @@ public class CreateSubscriptionRequest {
 
     public void setFrequency(SubscriptionFrequency frequency) {
         this.frequency = frequency;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
     }
 }

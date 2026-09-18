@@ -3,6 +3,8 @@ package com.spendwise.SpendWise.controller;
 import com.spendwise.SpendWise.dto.income.CreateIncomeRequest;
 import com.spendwise.SpendWise.entity.Income;
 import com.spendwise.SpendWise.entity.User;
+import com.spendwise.SpendWise.exception.AccessDeniedException;
+import com.spendwise.SpendWise.exception.ResourceNotFoundException;
 import com.spendwise.SpendWise.repository.UserRepository;
 import com.spendwise.SpendWise.service.IncomeService;
 
@@ -34,10 +36,7 @@ public class IncomeController {
             @Valid @RequestBody CreateIncomeRequest request,
             Authentication authentication) {
 
-        String email = authentication.getName();
-
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User currentUser = getCurrentUser(authentication);
 
         Income income = new Income();
 
@@ -53,12 +52,10 @@ public class IncomeController {
     public List<Income> getAllIncomes(
             Authentication authentication) {
 
-        String email = authentication.getName();
+        User currentUser = getCurrentUser(authentication);
 
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        return incomeService.getIncomesByUserId(currentUser.getId());
+        return incomeService.getIncomesByUserId(
+                currentUser.getId());
     }
 
     @GetMapping("/user/{userId}")
@@ -66,14 +63,9 @@ public class IncomeController {
             @PathVariable Long userId,
             Authentication authentication) {
 
-        String email = authentication.getName();
+        User currentUser = getCurrentUser(authentication);
 
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (!currentUser.getId().equals(userId)) {
-            throw new RuntimeException("Access denied");
-        }
+        checkUserIdOwnership(userId, currentUser);
 
         return incomeService.getIncomesByUserId(userId);
     }
@@ -83,14 +75,9 @@ public class IncomeController {
             @PathVariable Long userId,
             Authentication authentication) {
 
-        String email = authentication.getName();
+        User currentUser = getCurrentUser(authentication);
 
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (!currentUser.getId().equals(userId)) {
-            throw new RuntimeException("Access denied");
-        }
+        checkUserIdOwnership(userId, currentUser);
 
         return incomeService.getTotalIncomeByUserId(userId);
     }
@@ -100,14 +87,9 @@ public class IncomeController {
             @PathVariable Long userId,
             Authentication authentication) {
 
-        String email = authentication.getName();
+        User currentUser = getCurrentUser(authentication);
 
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (!currentUser.getId().equals(userId)) {
-            throw new RuntimeException("Access denied");
-        }
+        checkUserIdOwnership(userId, currentUser);
 
         return incomeService.getCurrentMonthIncome(userId);
     }
@@ -117,24 +99,11 @@ public class IncomeController {
             @PathVariable Long id,
             Authentication authentication) {
 
-        String email = authentication.getName();
-
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User currentUser = getCurrentUser(authentication);
 
         Income income = incomeService.getIncomeById(id);
 
-        if (income == null) {
-            throw new RuntimeException("Income not found");
-        }
-
-        if (income.getUser() == null) {
-            throw new RuntimeException("Income has no owner");
-        }
-
-        if (!income.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Access denied");
-        }
+        checkOwnership(income, currentUser);
 
         return income;
     }
@@ -145,24 +114,12 @@ public class IncomeController {
             @RequestBody Income income,
             Authentication authentication) {
 
-        String email = authentication.getName();
+        User currentUser = getCurrentUser(authentication);
 
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        Income existingIncome =
+                incomeService.getIncomeById(id);
 
-        Income existingIncome = incomeService.getIncomeById(id);
-
-        if (existingIncome == null) {
-            throw new RuntimeException("Income not found");
-        }
-
-        if (existingIncome.getUser() == null) {
-            throw new RuntimeException("Income has no owner");
-        }
-
-        if (!existingIncome.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Access denied");
-        }
+        checkOwnership(existingIncome, currentUser);
 
         return incomeService.updateIncome(id, income);
     }
@@ -172,25 +129,56 @@ public class IncomeController {
             @PathVariable Long id,
             Authentication authentication) {
 
-        String email = authentication.getName();
+        User currentUser = getCurrentUser(authentication);
 
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        Income existingIncome =
+                incomeService.getIncomeById(id);
 
-        Income existingIncome = incomeService.getIncomeById(id);
-
-        if (existingIncome == null) {
-            throw new RuntimeException("Income not found");
-        }
-
-        if (existingIncome.getUser() == null) {
-            throw new RuntimeException("Income has no owner");
-        }
-
-        if (!existingIncome.getUser().getId().equals(currentUser.getId())) {
-            throw new RuntimeException("Access denied");
-        }
+        checkOwnership(existingIncome, currentUser);
 
         incomeService.deleteIncome(id);
+    }
+
+    private User getCurrentUser(
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found"));
+    }
+
+    private void checkUserIdOwnership(
+            Long userId,
+            User currentUser) {
+
+        if (!currentUser.getId().equals(userId)) {
+            throw new AccessDeniedException(
+                    "Access denied");
+        }
+    }
+
+    private void checkOwnership(
+            Income income,
+            User currentUser) {
+
+        if (income == null) {
+            throw new ResourceNotFoundException(
+                    "Income not found");
+        }
+
+        if (income.getUser() == null) {
+            throw new ResourceNotFoundException(
+                    "Income has no owner");
+        }
+
+        if (!income.getUser().getId()
+                .equals(currentUser.getId())) {
+
+            throw new AccessDeniedException(
+                    "Access denied");
+        }
     }
 }

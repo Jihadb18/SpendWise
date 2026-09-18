@@ -3,9 +3,14 @@ package com.spendwise.SpendWise.controller;
 import com.spendwise.SpendWise.dto.budget.CreateBudgetRequest;
 import com.spendwise.SpendWise.entity.Budget;
 import com.spendwise.SpendWise.entity.User;
+import com.spendwise.SpendWise.exception.AccessDeniedException;
+import com.spendwise.SpendWise.exception.ResourceNotFoundException;
 import com.spendwise.SpendWise.repository.UserRepository;
 import com.spendwise.SpendWise.service.BudgetService;
+
 import jakarta.validation.Valid;
+
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -29,30 +34,39 @@ public class BudgetController {
 
     @PostMapping
     public Budget createBudget(
-            @Valid @RequestBody CreateBudgetRequest request) {
+            @Valid @RequestBody CreateBudgetRequest request,
+            Authentication authentication) {
 
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+        User currentUser = getCurrentUser(authentication);
 
         Budget budget = new Budget();
 
         budget.setCategory(request.getCategory());
         budget.setAmount(request.getAmount());
         budget.setMonth(request.getMonth());
-        budget.setUser(user);
+        budget.setUser(currentUser);
 
         return budgetService.createBudget(budget);
     }
 
     @GetMapping
-    public List<Budget> getAllBudgets() {
-        return budgetService.getAllBudgets();
+    public List<Budget> getAllBudgets(
+            Authentication authentication) {
+
+        User currentUser = getCurrentUser(authentication);
+
+        return budgetService.getBudgetsByUserId(
+                currentUser.getId());
     }
 
     @GetMapping("/user/{userId}")
     public List<Budget> getBudgetsByUserId(
-            @PathVariable Long userId) {
+            @PathVariable Long userId,
+            Authentication authentication) {
+
+        User currentUser = getCurrentUser(authentication);
+
+        checkUserIdOwnership(userId, currentUser);
 
         return budgetService.getBudgetsByUserId(userId);
     }
@@ -60,7 +74,12 @@ public class BudgetController {
     @GetMapping("/user/{userId}/month")
     public List<Budget> getBudgetsByUserAndMonth(
             @PathVariable Long userId,
-            @RequestParam LocalDate month) {
+            @RequestParam LocalDate month,
+            Authentication authentication) {
+
+        User currentUser = getCurrentUser(authentication);
+
+        checkUserIdOwnership(userId, currentUser);
 
         return budgetService.getBudgetsByUserAndMonth(
                 userId,
@@ -70,38 +89,62 @@ public class BudgetController {
 
     @GetMapping("/{id}")
     public Budget getBudgetById(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Authentication authentication) {
 
-        return budgetService.getBudgetById(id);
+        User currentUser = getCurrentUser(authentication);
+
+        Budget budget = budgetService.getBudgetById(id);
+
+        checkOwnership(budget, currentUser);
+
+        return budget;
     }
 
     @PutMapping("/{id}")
     public Budget updateBudget(
             @PathVariable Long id,
-            @RequestBody Budget budget) {
+            @RequestBody Budget budget,
+            Authentication authentication) {
+
+        User currentUser = getCurrentUser(authentication);
+
+        Budget existingBudget =
+                budgetService.getBudgetById(id);
+
+        checkOwnership(existingBudget, currentUser);
 
         return budgetService.updateBudget(id, budget);
     }
 
     @DeleteMapping("/{id}")
     public void deleteBudget(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        User currentUser = getCurrentUser(authentication);
+
+        Budget existingBudget =
+                budgetService.getBudgetById(id);
+
+        checkOwnership(existingBudget, currentUser);
 
         budgetService.deleteBudget(id);
     }
 
     @GetMapping("/{id}/spent")
     public BigDecimal getSpent(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        User currentUser = getCurrentUser(authentication);
 
         Budget budget = budgetService.getBudgetById(id);
 
-        if (budget == null) {
-            throw new RuntimeException("Budget not found");
-        }
+        checkOwnership(budget, currentUser);
 
         return budgetService.getSpent(
-                budget.getUser().getId(),
+                currentUser.getId(),
                 budget.getCategory(),
                 budget.getMonth()
         );
@@ -109,16 +152,17 @@ public class BudgetController {
 
     @GetMapping("/{id}/remaining")
     public BigDecimal getRemaining(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        User currentUser = getCurrentUser(authentication);
 
         Budget budget = budgetService.getBudgetById(id);
 
-        if (budget == null) {
-            throw new RuntimeException("Budget not found");
-        }
+        checkOwnership(budget, currentUser);
 
         BigDecimal spent = budgetService.getSpent(
-                budget.getUser().getId(),
+                currentUser.getId(),
                 budget.getCategory(),
                 budget.getMonth()
         );
@@ -131,16 +175,17 @@ public class BudgetController {
 
     @GetMapping("/{id}/percentage")
     public BigDecimal getPercentageUsed(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        User currentUser = getCurrentUser(authentication);
 
         Budget budget = budgetService.getBudgetById(id);
 
-        if (budget == null) {
-            throw new RuntimeException("Budget not found");
-        }
+        checkOwnership(budget, currentUser);
 
         BigDecimal spent = budgetService.getSpent(
-                budget.getUser().getId(),
+                currentUser.getId(),
                 budget.getCategory(),
                 budget.getMonth()
         );
@@ -149,5 +194,48 @@ public class BudgetController {
                 budget.getAmount(),
                 spent
         );
+    }
+
+    private User getCurrentUser(
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "User not found"));
+    }
+
+    private void checkUserIdOwnership(
+            Long userId,
+            User currentUser) {
+
+        if (!currentUser.getId().equals(userId)) {
+            throw new AccessDeniedException(
+                    "Access denied");
+        }
+    }
+
+    private void checkOwnership(
+            Budget budget,
+            User currentUser) {
+
+        if (budget == null) {
+            throw new ResourceNotFoundException(
+                    "Budget not found");
+        }
+
+        if (budget.getUser() == null) {
+            throw new ResourceNotFoundException(
+                    "Budget has no owner");
+        }
+
+        if (!budget.getUser().getId()
+                .equals(currentUser.getId())) {
+
+            throw new AccessDeniedException(
+                    "Access denied");
+        }
     }
 }
