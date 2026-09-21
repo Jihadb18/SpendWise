@@ -10,6 +10,9 @@ import java.util.Map;
 
 import java.util.List;
 
+
+import com.spendwise.SpendWise.exception.ResourceNotFoundException;
+
 @Service
 public class ExpenseService {
 
@@ -30,17 +33,23 @@ public class ExpenseService {
         return expenseRepository.findByUserId(userId);
     }
     public Expense getExpenseById(Long id) {
-        return expenseRepository.findById(id).orElse(null);
+        return expenseRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Expense not found with id: " + id
+                        )
+                );
     }
     public BigDecimal getTotalExpensesByUserId(Long userId) {
         return expenseRepository.getTotalExpensesByUserId(userId);
-    }
-    public Expense updateExpense(Long id, Expense expense) {
-        Expense existingExpense = expenseRepository.findById(id).orElse(null);
+    }public Expense updateExpense(Long id, Expense expense) {
 
-        if (existingExpense == null) {
-            return null;
-        }
+        Expense existingExpense = expenseRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Expense not found with id: " + id
+                        )
+                );
 
         existingExpense.setDescription(expense.getDescription());
         existingExpense.setAmount(expense.getAmount());
@@ -101,6 +110,13 @@ public class ExpenseService {
         );
     }
     public void deleteExpense(Long id) {
+
+        if (!expenseRepository.existsById(id)) {
+            throw new ResourceNotFoundException(
+                    "Expense not found with id: " + id
+            );
+        }
+
         expenseRepository.deleteById(id);
     }
 }
