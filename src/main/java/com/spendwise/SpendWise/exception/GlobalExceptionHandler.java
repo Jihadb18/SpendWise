@@ -13,10 +13,6 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // =========================
-    // Validation errors
-    // =========================
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(
             MethodArgumentNotValidException exception) {
@@ -44,12 +40,8 @@ public class GlobalExceptionHandler {
                 .body(response);
     }
 
-    // =========================
-    // Resource not found
-    // =========================
-
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFoundException(
+    public ResponseEntity<Map<String, Object>> handleResourceNotFoundException(
             ResourceNotFoundException exception) {
 
         Map<String, Object> response = new HashMap<>();
@@ -62,10 +54,6 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(response);
     }
-
-    // =========================
-    // Access denied
-    // =========================
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDeniedException(
@@ -81,10 +69,6 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.FORBIDDEN)
                 .body(response);
     }
-
-    // =========================
-    // Other runtime exceptions
-    // =========================
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntimeException(
