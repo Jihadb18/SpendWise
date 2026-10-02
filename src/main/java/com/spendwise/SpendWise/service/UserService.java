@@ -4,7 +4,7 @@ import com.spendwise.SpendWise.entity.User;
 import com.spendwise.SpendWise.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
+import com.spendwise.SpendWise.dto.UpdateProfileRequest;
 import java.util.List;
 
 @Service
@@ -41,6 +41,36 @@ public class UserService {
         existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
 
         return userRepository.save(existingUser);
+    }
+    public User getCurrentUser(String email) {
+        return userRepository.findByEmail(email).orElse(null);
+    }
+
+    public User updateCurrentUser(
+            String email,
+            UpdateProfileRequest request
+    ) {
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) {
+            return null;
+        }
+
+        if (request.getName() != null &&
+                !request.getName().isBlank()) {
+
+            user.setName(request.getName());
+        }
+
+        if (request.getPassword() != null &&
+                !request.getPassword().isBlank()) {
+
+            user.setPassword(
+                    passwordEncoder.encode(request.getPassword())
+            );
+        }
+
+        return userRepository.save(user);
     }
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
